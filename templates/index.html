@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система контролю вентиляцією</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #ffffff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        .sensor-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .sensor {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .sensor .gauge {
+            position: relative;
+            width: 20px;
+            height: 150px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .sensor .gauge .fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0;
+            background: #007bff;
+            transition: height 0.3s ease, background-color 0.3s ease;
+        }
+        .sensor h2 {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        .sensor .value {
+            display: flex;
+            align-items: baseline;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        .sensor .value .number {
+            font-size: 14px;
+        }
+        .sensor .value .unit {
+            margin-left: 2px;
+            font-size: 12px;
+            color: #555;
+        }
+        .button-group {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .button-group button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .button-group button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Система контролю вентиляцією</h1>
+        </div>
+
+        <div class="sensor-group">
+            <div class="sensor" id="temperature-sensor">
+                <div class="gauge">
+                    <div class="fill" id="temperature-fill"></div>
+                </div>
+                <h2>Температура</h2>
+                <div class="value" id="temperature-value">
+                    <span class="number">--</span>
+                    <div class="unit">°C</div>
+                </div>
+            </div>
+
+            <div class="sensor" id="pollution-sensor">
+                <div class="gauge">
+                    <div class="fill" id="pollution-fill"></div>
+                </div>
+                <h2>Кількість частинок в повітрі (PM2.5)</h2>
+                <div class="value" id="pollution-value">
+                    <span class="number">--</span>
+                    <div class="unit">µg/m³</div>
+                </div>
+            </div>
+
+            <div class="sensor" id="humidity-sensor">
+                <div class="gauge">
+                    <div class="fill" id="humidity-fill"></div>
+                </div>
+                <h2>Вологість</h2>
+                <div class="value" id="humidity-value">
+                    <span class="number">--</span>
+                    <div class="unit">%</div>
+                </div>
+            </div>
+        </div>
+        <div class="button-group">
+            <button type="button" onclick="generateSensorData()">Згенерувати випадкові дані</button>
+            <button type="button" onclick="updateSensorData()">Ввімкнути</button>
+        </div>
+    </div>
+    <script>
+        async function fetchAndUpdateSensorData(url) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                updateGauge('temperature', data.temperature, 50);
+                updateGauge('pollution', data.pollution, 200);
+                updateGauge('humidity', data.humidity, 100);
+            } catch (error) {
+                console.error(`Error fetching data from ${url}:`, error);
+            }
+        }
+
+        async function fetchSensorData() {
+            await fetchAndUpdateSensorData('/api/get_data');
+        }
+
+        async function generateSensorData() {
+            await fetchAndUpdateSensorData('/api/generate');
+        }
+
+        async function updateSensorData() {
+            await fetchAndUpdateSensorData('/api/update');
+        }
+
+        function updateGauge(id, value, maxValue) {
+            const fill = document.getElementById(`${id}-fill`);
+            const percentage = Math.min(100, (value / maxValue) * 100);
+            fill.style.height = `${percentage}%`;
+
+            if (percentage > 60) {
+                fill.style.backgroundColor = 'red';
+            } else if (percentage > 40) {
+                fill.style.backgroundColor = 'yellow';
+            } else {
+                fill.style.backgroundColor = '#007bff';
+            }
+
+            const valueElement = document.getElementById(`${id}-value`);
+            valueElement.querySelector('.number').textContent = value;
+        }
+
+        setInterval(fetchSensorData, 1000);
+        fetchSensorData();
+    </script>
+</body>
+</html>
